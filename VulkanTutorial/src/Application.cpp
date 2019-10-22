@@ -265,6 +265,12 @@ int Application::RateDeviceSuitable(VkPhysicalDevice device){
 		return 0;
 	}
 
+	// Check swap chain support
+	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+	if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty()) {
+		return 0;
+	}
+
 	// Return score
 	return score;
 }
@@ -328,6 +334,48 @@ QueueFamilyIndices Application::FindQueueFamilies(VkPhysicalDevice device){
 	return indices;
 }
 
+// Query swap chains
+SwapChainSupportDetails Application::QuerySwapChainSupport(VkPhysicalDevice device){
+	SwapChainSupportDetails details;
+
+	// Query capabilities
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.capabilities);
+
+	// Query suported surface formats
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+	if (formatCount != 0) {
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, details.formats.data());
+	}
+
+	// Query suported presentation modes
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, nullptr);
+	if (presentModeCount != 0) {
+		details.presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, details.presentModes.data());
+	}
+
+	// Return swap chain support details
+	return details;
+}
+
+// Select appropriate format
+VkSurfaceFormatKHR Application::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats){
+	
+	// Find preferable colour channels
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+
+	// Else return first format
+	return availableFormats[0];
+}
+
+// Create debug logger
 VkResult Application::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger){
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
@@ -338,6 +386,7 @@ VkResult Application::CreateDebugUtilsMessengerEXT(VkInstance instance, const Vk
 	}
 }
 
+// Destroy debug logger
 void Application::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
 	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != nullptr) {

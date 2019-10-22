@@ -37,6 +37,12 @@ struct QueueFamilyIndices {
 	}
 };
 
+struct SwapChainSupportDetails {
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> presentModes;
+};
+
 // Application Class
 class Application {
 public:
@@ -68,6 +74,8 @@ private:
 	int RateDeviceSuitable(VkPhysicalDevice device);		// Return suitability score of device
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);		// Returns true if extensions are supported
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);	// Return queue indices available on device
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);	// Query swap chains
+	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);	// Select appropriate format
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
