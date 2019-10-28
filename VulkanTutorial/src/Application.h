@@ -6,9 +6,12 @@
 #include <vector>
 #include <optional>
 
+#include "Shader.h"
+
 // CONST VARIABLES
 const int WIDTH = 800;
 const int HEIGHT = 600;
+const int MAX_FRAMES_IN_FLIGHT = 2;
 
 // Validation layers to use
 const std::vector<const char*> validationLayers = {
@@ -57,9 +60,26 @@ private:
 	VkSurfaceKHR m_Surface;		// Vulkan surface
 	VkQueue m_PresentQueue;		// Vulkan presentation queue
 	VkDevice m_Device;			// Vulkan logical device
+	VkSwapchainKHR m_SwapChain;	// Vulkan swap chain
+	VkRenderPass m_RenderPass;	// Vulkan render pass
+	VkPipeline m_GraphicsPipeline;				// Vulkan graphics pipeline
+	VkPipelineLayout m_PipelineLayout;			// Vulkan graphics pipeline layout
+	VkCommandPool m_CommandPool;				// Vulkan command pool
+	std::vector<VkCommandBuffer> m_CommandBuffers;		// Vk command buffers
+	std::vector<VkFramebuffer> m_SwapChainFramebuffers;	// Vk framebuffers
+	std::vector<VkImage> m_SwapChainImages;		// VkImages in swap chain
+	std::vector<VkImageView> m_SwapChainImageViews;	// Vulkan image views
+	VkFormat m_SwapChainImageFormat;			// Vulkan swap chain image format
+	VkExtent2D m_SwapChainExtent;				// Vulkan swap chain extent
 	VkPhysicalDevice m_PhysicalDevice;			// Vulkan physical device
 	VkQueue m_GraphicsQueue;	// Vulkan graphics queue
 	VkDebugUtilsMessengerEXT m_DebugMessenger;	// Vulkan debug logger
+	size_t m_CurrentFrame;						// Frame index
+
+	// SEMAPHORES AND FRAMES
+	std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+	std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+	std::vector<VkFence> m_InFlightFences;
 
 	// FUNCTIONS
 	void InitWindow();			// Initialise GLFW and Window
@@ -67,6 +87,15 @@ private:
 	void CreateInstance();		// Create Vulkan instance
 	void CreateSurface();		// Create Vulkan surface
 	void CreateLogicalDevice();	// Create logical Vulkan device
+	void CreateSwapChain();		// Create Vulkan swap chain
+	void CreateImageViews();	// Create Vulkan image views
+	void CreateRenderPass();	// Create Vulkan rendering pass
+	void CreateGraphicsPipeline();		// Create Vulkan graphics pipeline
+	void CreateCommandPool();	// Create Vulkan command pool
+	void CreateCommandBuffers();// Create command buffers for command pool
+	void CreateFramebuffers();	// Create frame buffers
+	void CreateSemaphores();	// Create semaphores
+	void DrawFrame();			// Draw frame with Vulkan
 	void PickPhysicalDevice();	// Select physical device for Vulkan to use
 	void SetupDebugMessenger();	// Setup vulkan debug logger
 	
@@ -76,6 +105,9 @@ private:
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);	// Return queue indices available on device
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);	// Query swap chains
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);	// Select appropriate format
+	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);		// Select appropriate presentation mode
+	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);								// Choose resolution of swap chain images
+
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
