@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "Shader.h"
+#include "Buffer.h"
 
 // CONST VARIABLES
 const int WIDTH = 800;
@@ -65,6 +66,8 @@ private:
 	VkPipeline m_GraphicsPipeline;				// Vulkan graphics pipeline
 	VkPipelineLayout m_PipelineLayout;			// Vulkan graphics pipeline layout
 	VkCommandPool m_CommandPool;				// Vulkan command pool
+	Buffer* m_VertexBuffer;						// Vertex buffer
+	Buffer* m_IndexBuffer;						// Index buffer
 	std::vector<VkCommandBuffer> m_CommandBuffers;		// Vk command buffers
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;	// Vk framebuffers
 	std::vector<VkImage> m_SwapChainImages;		// VkImages in swap chain
@@ -75,6 +78,7 @@ private:
 	VkQueue m_GraphicsQueue;	// Vulkan graphics queue
 	VkDebugUtilsMessengerEXT m_DebugMessenger;	// Vulkan debug logger
 	size_t m_CurrentFrame;						// Frame index
+	bool m_FramebufferResized = false;			// Bool for if screen has been resized
 
 	// SEMAPHORES AND FRAMES
 	std::vector<VkSemaphore> m_ImageAvailableSemaphores;
@@ -88,6 +92,8 @@ private:
 	void CreateSurface();		// Create Vulkan surface
 	void CreateLogicalDevice();	// Create logical Vulkan device
 	void CreateSwapChain();		// Create Vulkan swap chain
+	void RecreateSwapChain();	// Recreate Vulkan swapchain (runtime)
+	void CleanupSwapChain();	// Clean swap chain
 	void CreateImageViews();	// Create Vulkan image views
 	void CreateRenderPass();	// Create Vulkan rendering pass
 	void CreateGraphicsPipeline();		// Create Vulkan graphics pipeline
@@ -95,6 +101,8 @@ private:
 	void CreateCommandBuffers();// Create command buffers for command pool
 	void CreateFramebuffers();	// Create frame buffers
 	void CreateSemaphores();	// Create semaphores
+	void CreateVertexBuffer();	// Create vertex buffer
+	void CreateIndexBuffer();	// Create index buffer
 	void DrawFrame();			// Draw frame with Vulkan
 	void PickPhysicalDevice();	// Select physical device for Vulkan to use
 	void SetupDebugMessenger();	// Setup vulkan debug logger
@@ -107,7 +115,8 @@ private:
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);	// Select appropriate format
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);		// Select appropriate presentation mode
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);								// Choose resolution of swap chain images
-
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
+	
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
