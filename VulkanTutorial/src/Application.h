@@ -64,10 +64,14 @@ private:
 	VkSwapchainKHR m_SwapChain;	// Vulkan swap chain
 	VkRenderPass m_RenderPass;	// Vulkan render pass
 	VkPipeline m_GraphicsPipeline;				// Vulkan graphics pipeline
+	VkDescriptorSetLayout m_DescriptorSetLayout;// Vulkan descriptor set layout
 	VkPipelineLayout m_PipelineLayout;			// Vulkan graphics pipeline layout
 	VkCommandPool m_CommandPool;				// Vulkan command pool
+	VkDescriptorPool m_DescriptorPool;			// Vulkan descriptor pool
+	std::vector<VkDescriptorSet> m_DescriptorSets;	// Vulkan descriptor sets
 	Buffer* m_VertexBuffer;						// Vertex buffer
 	Buffer* m_IndexBuffer;						// Index buffer
+	std::vector<Buffer*> m_UniformBuffers;		// Vector of uniform buffers
 	std::vector<VkCommandBuffer> m_CommandBuffers;		// Vk command buffers
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;	// Vk framebuffers
 	std::vector<VkImage> m_SwapChainImages;		// VkImages in swap chain
@@ -96,6 +100,7 @@ private:
 	void CleanupSwapChain();	// Clean swap chain
 	void CreateImageViews();	// Create Vulkan image views
 	void CreateRenderPass();	// Create Vulkan rendering pass
+	void CreateDescriptorSetLayout();	// Create descriptor set layout
 	void CreateGraphicsPipeline();		// Create Vulkan graphics pipeline
 	void CreateCommandPool();	// Create Vulkan command pool
 	void CreateCommandBuffers();// Create command buffers for command pool
@@ -103,7 +108,11 @@ private:
 	void CreateSemaphores();	// Create semaphores
 	void CreateVertexBuffer();	// Create vertex buffer
 	void CreateIndexBuffer();	// Create index buffer
+	void CreateUniformBuffers();// Create uniform buffers
+	void CreateDescriptorPool();// Create descriptor pool
+	void CreateDescriptorSets();// Create descriptor sets
 	void DrawFrame();			// Draw frame with Vulkan
+	void UpdateUniformBuffer(uint32_t currentImage);	// Update uniform buffer for rotation
 	void PickPhysicalDevice();	// Select physical device for Vulkan to use
 	void SetupDebugMessenger();	// Setup vulkan debug logger
 	

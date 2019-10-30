@@ -88,6 +88,22 @@ void Buffer::CopyToBuffer(VkQueue graphicsQueue, VkCommandPool commandPool, VkBu
 
 }
 
+void Buffer::Bind(VkCommandBuffer commandBuffer){
+	switch (m_BufferType) {
+	case BUFFER_VERTEX: {
+		// Bind vertex buffer
+		VkBuffer buffers[] = { m_Buffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+		break;
+	}
+	case BUFFER_INDEX: {
+		// Bind index buffer
+		vkCmdBindIndexBuffer(commandBuffer, m_Buffer, 0, VK_INDEX_TYPE_UINT16);
+	}
+	}
+}
+
 // Find appropriate memory type
 uint32_t Buffer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 	// Get memory properties

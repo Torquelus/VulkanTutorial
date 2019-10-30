@@ -48,6 +48,13 @@ const std::vector<uint16_t> indices = {
 	2, 3, 0
 };
 
+// MVP uniform struct
+struct UniformBufferObject {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
 // Shader class
 class Shader {
 public:
