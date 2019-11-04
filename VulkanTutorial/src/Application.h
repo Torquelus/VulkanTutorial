@@ -6,46 +6,18 @@
 #include <vector>
 #include <optional>
 
+#include "Device.h"
 #include "Shader.h"
 #include "Buffer.h"
+#include "Texture.h"
+#include "CommandPool.h"
+#include "Image.h"
+#include "ImageView.h"
 
 // CONST VARIABLES
 const int WIDTH = 800;
 const int HEIGHT = 600;
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
-// Validation layers to use
-const std::vector<const char*> validationLayers = {
-	"VK_LAYER_KHRONOS_validation"
-};
-
-// Device extensions to use
-const std::vector<const char*> deviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-
-// Define if validation is enabled
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-// STRUCTS
-struct QueueFamilyIndices {
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-
-	bool IsComplete() {
-		return graphicsFamily.has_value() && presentFamily.has_value();
-	}
-};
-
-struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
 
 // Application Class
 class Application {
@@ -59,27 +31,29 @@ private:
 	GLFWwindow* m_Window;		// Main window
 	VkInstance m_Instance;		// Vulkan instance
 	VkSurfaceKHR m_Surface;		// Vulkan surface
-	VkQueue m_PresentQueue;		// Vulkan presentation queue
-	VkDevice m_Device;			// Vulkan logical device
+	Device* m_Device;			// Device object
 	VkSwapchainKHR m_SwapChain;	// Vulkan swap chain
 	VkRenderPass m_RenderPass;	// Vulkan render pass
 	VkPipeline m_GraphicsPipeline;				// Vulkan graphics pipeline
 	VkDescriptorSetLayout m_DescriptorSetLayout;// Vulkan descriptor set layout
 	VkPipelineLayout m_PipelineLayout;			// Vulkan graphics pipeline layout
-	VkCommandPool m_CommandPool;				// Vulkan command pool
+	CommandPool* m_CommandPool;					// Vulkan command pool
 	VkDescriptorPool m_DescriptorPool;			// Vulkan descriptor pool
 	std::vector<VkDescriptorSet> m_DescriptorSets;	// Vulkan descriptor sets
+	Texture* m_Texture;							// Texture object
+	ImageView* m_TextureView;					// Vulkan image view for texture
+	VkSampler m_TextureSampler;					// Vulkan texture sampler
 	Buffer* m_VertexBuffer;						// Vertex buffer
 	Buffer* m_IndexBuffer;						// Index buffer
 	std::vector<Buffer*> m_UniformBuffers;		// Vector of uniform buffers
 	std::vector<VkCommandBuffer> m_CommandBuffers;		// Vk command buffers
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;	// Vk framebuffers
 	std::vector<VkImage> m_SwapChainImages;		// VkImages in swap chain
-	std::vector<VkImageView> m_SwapChainImageViews;	// Vulkan image views
+	std::vector<ImageView*> m_SwapChainImageViews;	// Vulkan image views
+	Image* m_DepthImage;						// Vulkan depth image
+	ImageView* m_DepthImageView;				// Image view for above image
 	VkFormat m_SwapChainImageFormat;			// Vulkan swap chain image format
 	VkExtent2D m_SwapChainExtent;				// Vulkan swap chain extent
-	VkPhysicalDevice m_PhysicalDevice;			// Vulkan physical device
-	VkQueue m_GraphicsQueue;	// Vulkan graphics queue
 	VkDebugUtilsMessengerEXT m_DebugMessenger;	// Vulkan debug logger
 	size_t m_CurrentFrame;						// Frame index
 	bool m_FramebufferResized = false;			// Bool for if screen has been resized
@@ -94,7 +68,7 @@ private:
 	void InitVulkan();			// Initialise Vulkan
 	void CreateInstance();		// Create Vulkan instance
 	void CreateSurface();		// Create Vulkan surface
-	void CreateLogicalDevice();	// Create logical Vulkan device
+	void CreateDevice();		// Create device
 	void CreateSwapChain();		// Create Vulkan swap chain
 	void RecreateSwapChain();	// Recreate Vulkan swapchain (runtime)
 	void CleanupSwapChain();	// Clean swap chain
@@ -103,9 +77,13 @@ private:
 	void CreateDescriptorSetLayout();	// Create descriptor set layout
 	void CreateGraphicsPipeline();		// Create Vulkan graphics pipeline
 	void CreateCommandPool();	// Create Vulkan command pool
+	void CreateDepthResources();// Create and allocate resources for depth buffering
 	void CreateCommandBuffers();// Create command buffers for command pool
 	void CreateFramebuffers();	// Create frame buffers
 	void CreateSemaphores();	// Create semaphores
+	void CreateTextureImage();	// Create texture for application
+	void CreateTextureImageView();		// Create texture image view
+	void CreateTextureSampler();	// Create texture sampler
 	void CreateVertexBuffer();	// Create vertex buffer
 	void CreateIndexBuffer();	// Create index buffer
 	void CreateUniformBuffers();// Create uniform buffers
@@ -113,19 +91,19 @@ private:
 	void CreateDescriptorSets();// Create descriptor sets
 	void DrawFrame();			// Draw frame with Vulkan
 	void UpdateUniformBuffer(uint32_t currentImage);	// Update uniform buffer for rotation
-	void PickPhysicalDevice();	// Select physical device for Vulkan to use
 	void SetupDebugMessenger();	// Setup vulkan debug logger
 	
 	// ASSISTING FUNCTIONS
-	int RateDeviceSuitable(VkPhysicalDevice device);		// Return suitability score of device
-	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);		// Returns true if extensions are supported
-	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);	// Return queue indices available on device
-	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);	// Query swap chains
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);	// Select appropriate format
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);		// Select appropriate presentation mode
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);								// Choose resolution of swap chain images
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
-	
+	VkCommandBuffer BeginSingleTimeCommands();
+	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat FindDepthFormat();			// Find suitable format for depth image
+	bool HasStencilComponent(VkFormat format);	// Check if format has stencil component
+
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
