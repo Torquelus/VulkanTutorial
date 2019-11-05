@@ -6,13 +6,14 @@
 #include <vector>
 #include <optional>
 
-#include "Device.h"
-#include "Shader.h"
 #include "Buffer.h"
-#include "Texture.h"
 #include "CommandPool.h"
+#include "Device.h"
 #include "Image.h"
 #include "ImageView.h"
+#include "Model.h"
+#include "Shader.h"
+#include "Texture.h"
 
 // CONST VARIABLES
 const int WIDTH = 800;
@@ -40,11 +41,8 @@ private:
 	CommandPool* m_CommandPool;					// Vulkan command pool
 	VkDescriptorPool m_DescriptorPool;			// Vulkan descriptor pool
 	std::vector<VkDescriptorSet> m_DescriptorSets;	// Vulkan descriptor sets
-	Texture* m_Texture;							// Texture object
-	ImageView* m_TextureView;					// Vulkan image view for texture
 	VkSampler m_TextureSampler;					// Vulkan texture sampler
-	Buffer* m_VertexBuffer;						// Vertex buffer
-	Buffer* m_IndexBuffer;						// Index buffer
+	Model* m_Model;								// Model to render
 	std::vector<Buffer*> m_UniformBuffers;		// Vector of uniform buffers
 	std::vector<VkCommandBuffer> m_CommandBuffers;		// Vk command buffers
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;	// Vk framebuffers
@@ -81,11 +79,8 @@ private:
 	void CreateCommandBuffers();// Create command buffers for command pool
 	void CreateFramebuffers();	// Create frame buffers
 	void CreateSemaphores();	// Create semaphores
-	void CreateTextureImage();	// Create texture for application
-	void CreateTextureImageView();		// Create texture image view
 	void CreateTextureSampler();	// Create texture sampler
-	void CreateVertexBuffer();	// Create vertex buffer
-	void CreateIndexBuffer();	// Create index buffer
+	void LoadModel();			// Load in obj model
 	void CreateUniformBuffers();// Create uniform buffers
 	void CreateDescriptorPool();// Create descriptor pool
 	void CreateDescriptorSets();// Create descriptor sets

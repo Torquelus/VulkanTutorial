@@ -22,7 +22,7 @@ Texture::Texture(Device* device, CommandPool* commandPool, const char* path)
 	}
 
 	// Create staging buffer
-	Buffer stagingBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	Buffer stagingBuffer(m_Device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	// Map data to staging buffer
 	void* data;

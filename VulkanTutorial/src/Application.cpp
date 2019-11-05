@@ -31,18 +31,11 @@ Application::~Application() {
 	// Destroy sampler
 	vkDestroySampler(m_Device->GetDevice(), m_TextureSampler, nullptr);
 
-	// Delete texture image view
-	delete(m_TextureView);
-
-	// Delete texture
-	delete(m_Texture);
-
 	// Destroy descriptor set layout
 	vkDestroyDescriptorSetLayout(m_Device->GetDevice(), m_DescriptorSetLayout, nullptr);
-		
-	// Delete buffers
-	delete(m_VertexBuffer);
-	delete(m_IndexBuffer);
+
+	// Delete model
+	delete(m_Model);
 
 	// Destroy semaphores
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -123,11 +116,8 @@ void Application::InitVulkan() {
 	CreateCommandPool();
 	CreateDepthResources();
 	CreateFramebuffers();
-	CreateTextureImage();
-	CreateTextureImageView();
 	CreateTextureSampler();
-	CreateVertexBuffer();
-	CreateIndexBuffer();
+	LoadModel();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
@@ -672,17 +662,14 @@ void Application::CreateCommandBuffers(){
 		// Bind graphics pipeline
 		vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
-		// Bind vertex buffer
-		m_VertexBuffer->Bind(m_CommandBuffers[i]);
-
-		// Bind index buffer
-		m_IndexBuffer->Bind(m_CommandBuffers[i]);
+		// Bind model
+		m_Model->Bind(m_CommandBuffers[i]);
 
 		// Bind descriptor sets
 		vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
 
-		// Draw triangle
-		vkCmdDrawIndexed(m_CommandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		// Draw model
+		m_Model->Draw(m_CommandBuffers[i]);
 
 		// End render pass
 		vkCmdEndRenderPass(m_CommandBuffers[i]);
@@ -756,19 +743,6 @@ void Application::CreateSemaphores(){
 	m_CurrentFrame = 0;
 }
 
-// Create texture for application
-void Application::CreateTextureImage(){
-	m_Texture = new Texture(m_Device, m_CommandPool, "src/res/textures/n64.png");
-}
-
-// Create texture image view
-void Application::CreateTextureImageView(){
-
-	// Create image view
-	m_TextureView = new ImageView(m_Device, m_Texture->GetImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
-
-}
-
 // Create texture sampler
 void Application::CreateTextureSampler(){
 
@@ -798,49 +772,9 @@ void Application::CreateTextureSampler(){
 
 }
 
-// Create vertex buffer
-void Application::CreateVertexBuffer(){
-
-	// Get buffer size
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-	// Create staging buffer
-	Buffer stagingBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	// Map data
-	void* data;
-	vkMapMemory(m_Device->GetDevice(), stagingBuffer.GetBufferMemory(), 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t)bufferSize);
-	vkUnmapMemory(m_Device->GetDevice(), stagingBuffer.GetBufferMemory());
-
-	// Create vertex buffer
-	m_VertexBuffer = new Buffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BUFFER_VERTEX);
-	
-	// Copy data to vertex buffer
-	m_VertexBuffer->CopyToBuffer(m_Device->GetGraphicsQueue(), m_CommandPool->GetCommandPool(), stagingBuffer.GetBuffer(), bufferSize);
-}
-
-// Create index buffer
-void Application::CreateIndexBuffer(){
-
-	// Get buffer size
-	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-	// Create staging buffer
-	Buffer stagingBuffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	// Map data
-	void* data;
-	vkMapMemory(m_Device->GetDevice(), stagingBuffer.GetBufferMemory(), 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), (size_t)bufferSize);
-	vkUnmapMemory(m_Device->GetDevice(), stagingBuffer.GetBufferMemory());
-
-	// Create index buffer
-	m_IndexBuffer = new Buffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, BUFFER_INDEX);
-
-	// Copy data to index buffer
-	m_IndexBuffer->CopyToBuffer(m_Device->GetGraphicsQueue(), m_CommandPool->GetCommandPool(), stagingBuffer.GetBuffer(), bufferSize);
-
+// Load in obj model
+void Application::LoadModel(){
+	m_Model = new Model(m_Device, m_CommandPool, "src/res/models/test.obj", "src/res/textures/n64.png");
 }
 
 // Create uniform buffers
@@ -852,7 +786,7 @@ void Application::CreateUniformBuffers(){
 
 	// Create uniform buffer for each swapchainimage
 	for (size_t i = 0; i < m_SwapChainImages.size(); i++) {
-		m_UniformBuffers[i] = new Buffer(m_Device->GetDevice(), m_Device->GetPhysicalDevice(), bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, BUFFER_UNIFORM);
+		m_UniformBuffers[i] = new Buffer(m_Device, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, BUFFER_UNIFORM);
 	}
 
 }
@@ -910,7 +844,7 @@ void Application::CreateDescriptorSets(){
 		// Descriptor image info
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_TextureView->GetImageView();
+		imageInfo.imageView = m_Model->GetTextureView();
 		imageInfo.sampler = m_TextureSampler;
 
 		// Descriptor set update info

@@ -3,8 +3,8 @@
 #include <stdexcept>
 
 // Constructor
-Buffer::Buffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, BufferType bufferType)
-	: m_BufferType(bufferType), m_Device(device), m_PhysicalDevice(physicalDevice) {
+Buffer::Buffer(Device* device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, BufferType bufferType)
+	: m_BufferType(bufferType), m_Device(device) {
 
 	// Buffer creation info
 	VkBufferCreateInfo bufferInfo = {};
@@ -14,13 +14,13 @@ Buffer::Buffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize si
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	// Create buffer
-	if (vkCreateBuffer(m_Device, &bufferInfo, nullptr, &m_Buffer) != VK_SUCCESS) {
+	if (vkCreateBuffer(m_Device->GetDevice(), &bufferInfo, nullptr, &m_Buffer) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
 	// Get memory requirements
 	VkMemoryRequirements memRequirements;
-	vkGetBufferMemoryRequirements(m_Device, m_Buffer, &memRequirements);
+	vkGetBufferMemoryRequirements(m_Device->GetDevice(), m_Buffer, &memRequirements);
 
 	// Allocation info
 	VkMemoryAllocateInfo allocInfo = {};
@@ -29,24 +29,24 @@ Buffer::Buffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize si
 	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
 	// Allocate memory
-	if (vkAllocateMemory(m_Device, &allocInfo, nullptr, &m_BufferMemory) != VK_SUCCESS) {
+	if (vkAllocateMemory(m_Device->GetDevice(), &allocInfo, nullptr, &m_BufferMemory) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate buffer memory");
 	}
 
 	// Bind buffer to memory
-	vkBindBufferMemory(m_Device, m_Buffer, m_BufferMemory, 0);
+	vkBindBufferMemory(m_Device->GetDevice(), m_Buffer, m_BufferMemory, 0);
 
 }
 
 // Destructor
 Buffer::~Buffer(){
 	// Destroy vertex buffer and free memory
-	vkDestroyBuffer(m_Device, m_Buffer, nullptr);
-	vkFreeMemory(m_Device, m_BufferMemory, nullptr);
+	vkDestroyBuffer(m_Device->GetDevice(), m_Buffer, nullptr);
+	vkFreeMemory(m_Device->GetDevice(), m_BufferMemory, nullptr);
 }
 
 // Copy data to buffer
-void Buffer::CopyToBuffer(VkQueue graphicsQueue, VkCommandPool commandPool, VkBuffer srcBuffer, VkDeviceSize size){
+void Buffer::CopyToBuffer(VkCommandPool commandPool, VkBuffer srcBuffer, VkDeviceSize size){
 
 	// Command buffer allocation info
 	VkCommandBufferAllocateInfo allocInfo = {};
@@ -57,7 +57,7 @@ void Buffer::CopyToBuffer(VkQueue graphicsQueue, VkCommandPool commandPool, VkBu
 
 	// Create command buffer
 	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(m_Device, &allocInfo, &commandBuffer);
+	vkAllocateCommandBuffers(m_Device->GetDevice(), &allocInfo, &commandBuffer);
 
 	// Start recording command buffer
 	VkCommandBufferBeginInfo beginInfo = {};
@@ -80,11 +80,11 @@ void Buffer::CopyToBuffer(VkQueue graphicsQueue, VkCommandPool commandPool, VkBu
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(graphicsQueue);
+	vkQueueSubmit(m_Device->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(m_Device->GetGraphicsQueue());
 
 	// Free command buffers
-	vkFreeCommandBuffers(m_Device, commandPool, 1, &commandBuffer);
+	vkFreeCommandBuffers(m_Device->GetDevice(), commandPool, 1, &commandBuffer);
 
 }
 
@@ -99,7 +99,8 @@ void Buffer::Bind(VkCommandBuffer commandBuffer){
 	}
 	case BUFFER_INDEX: {
 		// Bind index buffer
-		vkCmdBindIndexBuffer(commandBuffer, m_Buffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_Buffer, 0, VK_INDEX_TYPE_UINT32);
+		break;
 	}
 	}
 }
@@ -108,7 +109,7 @@ void Buffer::Bind(VkCommandBuffer commandBuffer){
 uint32_t Buffer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 	// Get memory properties
 	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
+	vkGetPhysicalDeviceMemoryProperties(m_Device->GetPhysicalDevice(), &memProperties);
 
 	// Find suitable memory type
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
