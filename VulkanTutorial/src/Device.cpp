@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <algorithm>
 
 // Constructor
 Device::Device(VkInstance instance, VkSurfaceKHR surface) : m_Surface(surface) {
@@ -97,6 +98,7 @@ void Device::PickPhysicalDevice(VkInstance instance) {
 	// Check if best candidate is suitable else error
 	if (candidates.rbegin()->first > 0) {
 		m_PhysicalDevice = candidates.rbegin()->second;
+		m_MsaaSamples = GetMaxUsableSampleCount();
 	}
 	else {
 		throw std::runtime_error("Failed to find suitable GPU!");
@@ -208,6 +210,25 @@ bool Device::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
 	// return true if all required extensions were found
 	return requiredExtensions.empty();
 
+}
+
+// Max MSAA samples amount
+VkSampleCountFlagBits Device::GetMaxUsableSampleCount() {
+	// Get physical device properties
+	VkPhysicalDeviceProperties physicalDeviceProperties;
+	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &physicalDeviceProperties);
+
+	// Check colour and depth sampling count
+	VkSampleCountFlags counts = std::min(physicalDeviceProperties.limits.framebufferColorSampleCounts, physicalDeviceProperties.limits.framebufferDepthSampleCounts);
+
+	// Check amound of samples, else return 1 sample
+	if (counts & VK_SAMPLE_COUNT_64_BIT) { return VK_SAMPLE_COUNT_64_BIT; }
+	if (counts & VK_SAMPLE_COUNT_32_BIT) { return VK_SAMPLE_COUNT_32_BIT; }
+	if (counts & VK_SAMPLE_COUNT_16_BIT) { return VK_SAMPLE_COUNT_16_BIT; }
+	if (counts & VK_SAMPLE_COUNT_8_BIT) { return VK_SAMPLE_COUNT_8_BIT; }
+	if (counts & VK_SAMPLE_COUNT_4_BIT) { return VK_SAMPLE_COUNT_4_BIT; }
+	if (counts & VK_SAMPLE_COUNT_2_BIT) { return VK_SAMPLE_COUNT_2_BIT; }
+	return VK_SAMPLE_COUNT_1_BIT;
 }
 
 // Query swap chains

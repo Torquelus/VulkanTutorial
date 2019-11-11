@@ -15,11 +15,11 @@ public:
 	~Texture();		// Destructor
 
 	// Getters
-	VkImage GetImage() { return m_Image->GetImage(); }
+	Image* GetImage() { return m_Image; }
 	VkDeviceMemory GetImageMemory() { return m_Image->GetImageMemory(); }
 private:
 	// VARIABLES
-	Device* m_Device;					// Device object
-	Image*	m_Image;					// Texture image
+	Device* m_Device;		// Device object
+	Image*	m_Image;		// Texture image
 
 };

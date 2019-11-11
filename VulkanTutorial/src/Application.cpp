@@ -114,10 +114,11 @@ void Application::InitVulkan() {
 	CreateDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	CreateCommandPool();
+	CreateColourResources();
 	CreateDepthResources();
 	CreateFramebuffers();
-	CreateTextureSampler();
 	LoadModel();
+	CreateTextureSampler();
 	CreateUniformBuffers();
 	CreateDescriptorPool();
 	CreateDescriptorSets();
@@ -261,6 +262,7 @@ void Application::RecreateSwapChain() {
 	CreateImageViews();
 	CreateRenderPass();
 	CreateGraphicsPipeline();
+	CreateColourResources();
 	CreateDepthResources();
 	CreateFramebuffers();
 	CreateUniformBuffers();
@@ -272,7 +274,7 @@ void Application::RecreateSwapChain() {
 // Clean swap chain
 void Application::CleanupSwapChain(){
 	// Delete depth image and imageview
-	delete(m_DepthImageView);
+	delete(m_ColourImage);
 	delete(m_DepthImage);
 	
 	// Destroy framebuffers
@@ -316,7 +318,7 @@ void Application::CreateImageViews() {
 
 	// Loop through all images
 	for (size_t i = 0; i < m_SwapChainImages.size(); i++) {
-		m_SwapChainImageViews[i] = new ImageView(m_Device, m_SwapChainImages[i], m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_SwapChainImageViews[i] = new ImageView(m_Device, m_SwapChainImages[i], m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	}
 }
 
@@ -326,13 +328,13 @@ void Application::CreateRenderPass(){
 	// Vulkan colour attachment description
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = m_SwapChainImageFormat;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.samples = m_Device->GetSamples();
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	// Colour attachment reference
 	VkAttachmentReference colorAttachmentRef = {};
@@ -342,7 +344,7 @@ void Application::CreateRenderPass(){
 	// Vulkan depth attachment description
 	VkAttachmentDescription depthAttachment = {};
 	depthAttachment.format = FindDepthFormat();
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.samples = m_Device->GetSamples();
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -355,12 +357,29 @@ void Application::CreateRenderPass(){
 	depthAttachmentRef.attachment = 1;
 	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+	// Colour attachment resolve
+	VkAttachmentDescription colourAttachmentResolve = {};
+	colourAttachmentResolve.format = m_SwapChainImageFormat;
+	colourAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+	colourAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colourAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colourAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colourAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colourAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colourAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	// Reference to colour attachment resolver
+	VkAttachmentReference colourAttachmentResolveRef = {};
+	colourAttachmentResolveRef.attachment = 2;
+	colourAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	// Subpass references
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
 	subpass.pDepthStencilAttachment = &depthAttachmentRef;
+	subpass.pResolveAttachments = &colourAttachmentResolveRef;
 
 	// Create subpass dependencies
 	VkSubpassDependency dependency = {};
@@ -372,7 +391,7 @@ void Application::CreateRenderPass(){
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	
 	// Render pass creation info
-	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
+	std::array<VkAttachmentDescription, 3> attachments = { colorAttachment, depthAttachment, colourAttachmentResolve };
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
@@ -499,7 +518,7 @@ void Application::CreateGraphicsPipeline(){
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = VK_FALSE;
-	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling.rasterizationSamples = m_Device->GetSamples();
 	multisampling.minSampleShading = 1.0f;
 	multisampling.pSampleMask = nullptr;
 	multisampling.alphaToCoverageEnable = VK_FALSE;
@@ -597,6 +616,15 @@ void Application::CreateCommandPool(){
 
 }
 
+// Create and allocate resources for antialiasing
+void Application::CreateColourResources(){
+	// Get colour format
+	VkFormat colourFormat = m_SwapChainImageFormat;
+
+	// Create colour image
+	m_ColourImage = new Image(m_Device, m_CommandPool, m_SwapChainExtent.width, m_SwapChainExtent.height, 1, m_Device->GetSamples(), colourFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
 // Create and allocate resources for depth buffering
 void Application::CreateDepthResources(){
 
@@ -604,13 +632,10 @@ void Application::CreateDepthResources(){
 	VkFormat depthFormat = FindDepthFormat();
 
 	// Create image
-	m_DepthImage = new Image(m_Device, m_CommandPool, m_SwapChainExtent.width, m_SwapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	// Create depth image view
-	m_DepthImageView = new ImageView(m_Device, m_DepthImage->GetImage(), depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	m_DepthImage = new Image(m_Device, m_CommandPool, m_SwapChainExtent.width, m_SwapChainExtent.height, 1, m_Device->GetSamples(), depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// Transition depth image to attachment
-	m_DepthImage->TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	m_DepthImage->TransitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 
 }
 
@@ -691,7 +716,7 @@ void Application::CreateFramebuffers(){
 	// Loop through image views
 	for (size_t i = 0; i < m_SwapChainImageViews.size(); i++) {
 		// Create attachments
-		std::array<VkImageView, 2> attachments = { m_SwapChainImageViews[i]->GetImageView(), m_DepthImageView->GetImageView() };
+		std::array<VkImageView, 3> attachments = { m_ColourImage->GetImageView(), m_DepthImage->GetImageView(), m_SwapChainImageViews[i]->GetImageView() };
 
 		// Framebuffer creation info
 		VkFramebufferCreateInfo framebufferInfo = {};
@@ -761,9 +786,9 @@ void Application::CreateTextureSampler(){
 	samplerInfo.compareEnable = VK_FALSE;
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
+	samplerInfo.mipLodBias = 0;
+	samplerInfo.minLod = 0;
+	samplerInfo.maxLod = static_cast<float>(m_Model->GetTexture()->GetImage()->GetMipLevels());
 
 	// Create texture sampler
 	if (vkCreateSampler(m_Device->GetDevice(), &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS) {
@@ -774,7 +799,7 @@ void Application::CreateTextureSampler(){
 
 // Load in obj model
 void Application::LoadModel(){
-	m_Model = new Model(m_Device, m_CommandPool, "src/res/models/test.obj", "src/res/textures/n64.png");
+	m_Model = new Model(m_Device, m_CommandPool, "src/res/models/kurpitsa_.obj", "src/res/textures/kurpitsa_.png");
 }
 
 // Create uniform buffers
@@ -952,7 +977,7 @@ void Application::UpdateUniformBuffer(uint32_t currentImage){
 	// Create object and rotate
 	UniformBufferObject ubo = {};
 	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(5.0f, 5.0, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;
 

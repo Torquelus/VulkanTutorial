@@ -10,9 +10,6 @@ Model::Model(Device* device, CommandPool* commandPool, const char* modelPath, co
 	: m_Device(device), m_CommandPool(commandPool) {
 	// Load texture
 	m_Texture = new Texture(m_Device, m_CommandPool, texturePath);
-
-	// Create image view
-	m_TextureView = new ImageView(m_Device, m_Texture->GetImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 	
 	// Objects to load model into
 	tinyobj::attrib_t attrib;
@@ -66,9 +63,6 @@ Model::Model(Device* device, CommandPool* commandPool, const char* modelPath, co
 
 // Destructor
 Model::~Model(){
-	// Delete texture image view
-	delete(m_TextureView);
-
 	// Delete texture
 	delete(m_Texture);
 

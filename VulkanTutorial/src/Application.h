@@ -48,8 +48,8 @@ private:
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;	// Vk framebuffers
 	std::vector<VkImage> m_SwapChainImages;		// VkImages in swap chain
 	std::vector<ImageView*> m_SwapChainImageViews;	// Vulkan image views
+	Image* m_ColourImage;						// Image for multisampling
 	Image* m_DepthImage;						// Vulkan depth image
-	ImageView* m_DepthImageView;				// Image view for above image
 	VkFormat m_SwapChainImageFormat;			// Vulkan swap chain image format
 	VkExtent2D m_SwapChainExtent;				// Vulkan swap chain extent
 	VkDebugUtilsMessengerEXT m_DebugMessenger;	// Vulkan debug logger
@@ -75,11 +75,12 @@ private:
 	void CreateDescriptorSetLayout();	// Create descriptor set layout
 	void CreateGraphicsPipeline();		// Create Vulkan graphics pipeline
 	void CreateCommandPool();	// Create Vulkan command pool
+	void CreateColourResources();// Create and allocate resources for antialiasing
 	void CreateDepthResources();// Create and allocate resources for depth buffering
 	void CreateCommandBuffers();// Create command buffers for command pool
 	void CreateFramebuffers();	// Create frame buffers
 	void CreateSemaphores();	// Create semaphores
-	void CreateTextureSampler();	// Create texture sampler
+	void CreateTextureSampler();// Create texture sampler
 	void LoadModel();			// Load in obj model
 	void CreateUniformBuffers();// Create uniform buffers
 	void CreateDescriptorPool();// Create descriptor pool
@@ -96,8 +97,9 @@ private:
 	VkCommandBuffer BeginSingleTimeCommands();
 	void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 	VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-	VkFormat FindDepthFormat();			// Find suitable format for depth image
-	bool HasStencilComponent(VkFormat format);	// Check if format has stencil component
+	VkFormat FindDepthFormat();							// Find suitable format for depth image
+	bool HasStencilComponent(VkFormat format);			// Check if format has stencil component
+
 
 	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,

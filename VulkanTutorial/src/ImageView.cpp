@@ -3,7 +3,7 @@
 #include <stdexcept>
 
 // Constructor
-ImageView::ImageView(Device* device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+ImageView::ImageView(Device* device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
 : m_Device(device) {
 	// Image view creation data
 	VkImageViewCreateInfo createInfo = {};
@@ -17,7 +17,7 @@ ImageView::ImageView(Device* device, VkImage image, VkFormat format, VkImageAspe
 	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 	createInfo.subresourceRange.aspectMask = aspectFlags;
 	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.levelCount = mipLevels;
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 

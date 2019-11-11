@@ -1228,8 +1228,5 @@
     <Image Include="src\res\textures\n64.png">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="src\res\textures\deathstar_ao.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
   </ItemGroup>
 </Project>

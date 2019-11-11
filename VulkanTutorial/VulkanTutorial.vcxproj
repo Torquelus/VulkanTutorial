@@ -549,7 +549,6 @@
     <None Include="src\vendor\glm\gtx\wrap.inl" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="src\res\textures\deathstar_ao.jpg" />
     <Image Include="src\res\textures\n64.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

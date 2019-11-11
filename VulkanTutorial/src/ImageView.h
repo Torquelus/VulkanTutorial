@@ -6,7 +6,7 @@
 
 class ImageView {
 public:
-	ImageView(Device* device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);	// Constructor
+	ImageView(Device* device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);	// Constructor
 	~ImageView();	// Destructor
 
 	// GETTERS

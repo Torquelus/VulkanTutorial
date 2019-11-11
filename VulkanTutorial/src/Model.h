@@ -19,7 +19,8 @@ public:
 	void Draw(VkCommandBuffer commandBuffer);	// Draw model
 
 	// GETTERS
-	VkImageView GetTextureView() { return m_TextureView->GetImageView(); }
+	VkImageView GetTextureView() { return m_Texture->GetImage()->GetImageView(); }
+	Texture* GetTexture() { return m_Texture; }
 private:
 	// VARIABLES
 	Device* m_Device;				// Vulkan device
@@ -27,7 +28,6 @@ private:
 	std::vector<Vertex> m_Vertices;	// Vector of vertices
 	std::vector<uint32_t> m_Indices;// Vector of indices
 	Texture* m_Texture;				// Texture of model
-	ImageView* m_TextureView;		// Image view of texture
 	Buffer* m_VertexBuffer;			// Vertex buffer for model
 	Buffer* m_IndexBuffer;			// Vertex buffer for model
 

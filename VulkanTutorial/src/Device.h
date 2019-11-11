@@ -52,6 +52,7 @@ public:
 	VkDevice GetDevice() { return m_Device; }
 	VkQueue GetGraphicsQueue() { return m_GraphicsQueue; }
 	VkQueue GetPresentQueue() { return m_PresentQueue; }
+	VkSampleCountFlagBits GetSamples() { return m_MsaaSamples; }
 private:
 	// VARIABLES
 	VkPhysicalDevice m_PhysicalDevice;		// Vulkan physical device
@@ -59,11 +60,13 @@ private:
 	VkQueue m_GraphicsQueue;				// Vulkan graphics queue
 	VkQueue m_PresentQueue;					// Vulkan present queue
 	VkSurfaceKHR m_Surface;					// Vulkan surface
+	VkSampleCountFlagBits m_MsaaSamples = VK_SAMPLE_COUNT_1_BIT;	// MSAA samples
 
 	// FUNCTIONS
 	void CreateLogicalDevice();						// Create Vulkan logical devic
 	void PickPhysicalDevice(VkInstance instance);	// Select physical device for Vulkan to use
 	int RateDeviceSuitable(VkPhysicalDevice device);						// Return suitability score of device
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);				// Returns true if extensions are supported
+	VkSampleCountFlagBits GetMaxUsableSampleCount();	// Max MSAA samples amount
 
 };
